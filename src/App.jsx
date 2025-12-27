@@ -9,7 +9,7 @@ import {
 
 /* ------------- CONFIGURAÇÕES ------------- */
 const COLLECTION_ORDERS = "doceeser_pedidos"; 
-const DELIVERY_FEE = 2.99;
+const DELIVERY_FEE = 0.00;
 const ETA_TEXT = "20–35 min";
 const LOYALTY_GOAL = 10; 
 
@@ -41,7 +41,7 @@ const initialProducts = [
   {
     id: 9,
     name: "Red velvet com Ninho e Morangos",
-    price: 15.90,
+    price: 1.00,
     category: 'bolos',
     description: "Massa aveludada e macia, coberta com creme de leite Ninho cremoso e morangos fresquinhos no topo. Uma combinação elegante.",
     imageUrl: "https://i.imgur.com/3UDWhLR.png"
