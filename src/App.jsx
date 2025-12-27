@@ -15,8 +15,9 @@ const LOYALTY_GOAL = 10;
 
 const LOGO_URL = "https://i.imgur.com/4LsEEuy.jpeg";
 
-// ✅ CONFIGURAÇÃO DO SERVIDOR LOCAL
-const BACKEND_URL = "http://localhost:3001/create-payment";
+// ✅ CONFIGURAÇÃO DO SERVIDOR VERCEL (ROTA RELATIVA)
+// O Vercel gerencia as funções serverless na pasta /api automaticamente.
+const BACKEND_URL = "/api/create-payment";
 
 // Chaves do Supabase
 const SUPABASE_URL = 'https://elpinlotdogazhpdwlqr.supabase.co';
@@ -403,7 +404,7 @@ export default function App() {
     setIsUserMenuOpen(false);
   };
 
-  // --- FUNÇÃO DE PAGAMENTO (Backend Local) - ROBUSTA E INTELIGENTE ---
+  // --- FUNÇÃO DE PAGAMENTO (Backend Vercel) - ROBUSTA E INTELIGENTE ---
   const createAbacateCharge = async () => {
     if (!customer.nome || !customer.telefone || !customer.email || !customer.cpf) {
       alert("Para gerar o Pix, precisamos de Nome, Telefone, Email e CPF.");
@@ -416,7 +417,7 @@ export default function App() {
       if (!cleanPhone.startsWith('55') && cleanPhone.length <= 11) cleanPhone = '55' + cleanPhone;
       const formattedPhone = '+' + cleanPhone;
 
-      console.log("🚀 Enviando para servidor local:", BACKEND_URL);
+      console.log("🚀 Enviando para servidor (Vercel):", BACKEND_URL);
 
       const response = await fetch(BACKEND_URL, {
         method: "POST",
@@ -476,7 +477,7 @@ export default function App() {
 
     } catch (error) {
       console.error("❌ Erro de conexão fatal:", error);
-      alert("Erro ao conectar com o servidor local. Verifique se o 'node server.js' está rodando.");
+      alert("Erro ao conectar com o servidor. Verifique sua conexão.");
       return null;
     }
   };
