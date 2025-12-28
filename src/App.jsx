@@ -4,7 +4,7 @@ import {
   ShoppingCart, Plus, Minus, X, Home, ChevronRight, Truck, MapPin,
   Loader2, Cake, Heart, Trash2, Check, Clock, Utensils, Star, Phone,
   QrCode, Copy, CreditCard, Bike, Package, User, Lock, Gift, LogOut,
-  ChevronDown, ExternalLink, Search, List, FileText, ShieldCheck
+  ChevronDown, ExternalLink, Search, List, FileText, ShieldCheck, AlertCircle
 } from "lucide-react";
 
 /* ------------- CONFIGURAÇÕES ------------- */
@@ -228,13 +228,14 @@ export default function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); 
   const [loyaltyProgress, setLoyaltyProgress] = useState(0);
+  const [termsModalOpen, setTermsModalOpen] = useState(false); // ✅ ESTADO PARA MODAL DE TERMOS
 
   // Pagamento & Pedido
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   
-  // ✅ ESTADO: Dados do cliente
+  // ✅ ESTADO: Dados do cliente (inclui CPF e Email)
   const [customer, setCustomer] = useState({ 
     nome: '', 
     telefone: '', 
@@ -576,11 +577,78 @@ export default function App() {
 
   // --- COMPONENTES VISUAIS ---
   
+  // ✅ MODAL DE DIRETRIZES
+  const TermsModal = ({ onClose, onAccept }) => {
+    if (!termsModalOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn">
+        <div className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl animate-slideUp">
+          {/* Header */}
+          <div className="p-5 border-b flex justify-between items-center bg-gray-50 rounded-t-3xl">
+            <h3 className="font-bold text-lg flex items-center gap-2 text-gray-800">
+              <FileText className="w-5 h-5 text-amber-600" /> Diretrizes e Termos
+            </h3>
+            <button onClick={() => setTermsModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full transition">
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 overflow-y-auto space-y-6 text-sm text-gray-600 leading-relaxed custom-scrollbar">
+            
+            <div className="space-y-2">
+              <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-green-600" /> 1. Privacidade e Dados
+              </h4>
+              <p>Nós da <strong>Doce É Ser</strong> nos comprometemos a proteger sua privacidade. Seus dados pessoais (nome, telefone, endereço, e-mail e CPF) são utilizados exclusivamente para o processamento de pedidos e entregas. Não compartilhamos suas informações com terceiros, exceto quando necessário para a operação logística (ex: entregadores parceiros).</p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                <Bike className="w-4 h-4 text-blue-600" /> 2. Política de Entrega
+              </h4>
+              <p>O tempo de entrega estimado é de {ETA_TEXT}. Este prazo pode variar dependendo da demanda e condições climáticas. Certifique-se de que haverá alguém no local para receber o pedido. Caso a entrega não seja efetuada por ausência, poderá ser cobrada uma nova taxa de entrega.</p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500" /> 3. Cancelamentos e Trocas
+              </h4>
+              <p>Por se tratar de produtos alimentícios perecíveis, não aceitamos devoluções após a entrega, exceto em casos de inconformidade com o pedido realizado. Cancelamentos só serão aceitos se o pedido ainda não tiver entrado em produção.</p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-purple-600" /> 4. Pagamentos
+              </h4>
+              <p>Utilizamos a plataforma AbacatePay para processar pagamentos via Pix de forma segura. A confirmação é automática. Não armazenamos dados sensíveis de pagamento em nossos servidores.</p>
+            </div>
+
+            <p className="text-xs text-gray-400 italic mt-4">Última atualização: Dezembro de 2025.</p>
+          </div>
+
+          {/* Footer */}
+          <div className="p-5 border-t bg-gray-50 rounded-b-3xl">
+            <button 
+              onClick={() => {
+                setTermsModalOpen(false);
+                if (onAccept) onAccept();
+              }}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-amber-600/20 active:scale-[0.98]"
+            >
+              Li e Concordo
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const AuthModal = () => {
     if (!authModalOpen) return null;
     const [isRegister, setIsRegister] = useState(false);
     const [formData, setFormData] = useState({ name: '', phone: '', password: '', confirmPassword: '' });
-    // ✅ NOVO: Estado para os termos
     const [termsAccepted, setTermsAccepted] = useState(false);
 
     const handleSubmit = (e) => {
@@ -630,17 +698,17 @@ export default function App() {
                   <input required type="password" className="w-full p-3 bg-gray-50 rounded-xl border focus:border-amber-500 outline-none" placeholder="******" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
                 </div>
                 
-                {/* ✅ CHECKBOX DE DIRETRIZES */}
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                {/* ✅ CHECKBOX DE DIRETRIZES MELHORADA */}
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 transition hover:bg-gray-100">
                   <input 
                     type="checkbox" 
                     id="terms"
-                    className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 border-gray-300"
+                    className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 border-gray-300 mt-0.5 cursor-pointer"
                     checked={termsAccepted}
                     onChange={(e) => setTermsAccepted(e.target.checked)}
                   />
-                  <label htmlFor="terms" className="text-xs text-gray-600 cursor-pointer select-none">
-                    Li e aceito as <span className="font-bold text-amber-700 hover:underline">diretrizes do site</span> e política de privacidade.
+                  <label htmlFor="terms" className="text-xs text-gray-600 cursor-pointer select-none leading-relaxed">
+                    Li e aceito as <button type="button" onClick={() => setTermsModalOpen(true)} className="font-bold text-amber-700 hover:text-amber-900 underline">diretrizes do site</button> e política de privacidade.
                   </label>
                 </div>
               </>
@@ -1370,7 +1438,7 @@ export default function App() {
         {page === 'my_orders' && <MyOrdersPage />}
       </main>
 
-      <AcaiModal /> <PaymentModal /> <AuthModal />
+      <AcaiModal /> <PaymentModal /> <AuthModal /> <TermsModal />
 
       <footer className="bg-white border-t border-gray-100 py-10 text-center">
         <div className="flex items-center justify-center gap-2 mb-2 opacity-50"><Cake className="w-5 h-5"/><span className="font-bold">Doce É Ser</span></div>
