@@ -293,12 +293,23 @@ export default function App() {
       
       intervalId = setInterval(async () => {
         try {
+          // Verifica se é URL relativa (Vercel) ou absoluta (Local)
+          // No caso do Vercel é relativo, então usamos query params se necessário ou path
           const url = CHECK_STATUS_URL.startsWith('http') 
             ? `${CHECK_STATUS_URL}/${paymentData.id}` 
-            : `${CHECK_STATUS_URL}?billingId=${paymentData.id}`;
+            : `${CHECK_STATUS_URL}?billingId=${paymentData.id}`; // Vercel usa query params
 
           const response = await fetch(url);
-          const data = await response.json();
+          
+          // ✅ TRATAMENTO DE RESPOSTA NÃO-JSON (EVITA O CRASH NO POLLING)
+          const text = await response.text();
+          let data;
+          try {
+             data = JSON.parse(text);
+          } catch(e) {
+             console.warn("Polling: Resposta não é JSON, ignorando...");
+             return;
+          }
           
           if (data.status === 'PAID') {
             clearInterval(intervalId);
@@ -450,11 +461,23 @@ export default function App() {
 
       console.log("🚀 Enviando para servidor (Vercel):", BACKEND_URL);
 
+      // ✅ ADICIONANDO TAXA DE ENTREGA COMO PRODUTO
+      const productsWithDelivery = [
+        ...cart,
+        {
+          name: "Taxa de Entrega",
+          price: DELIVERY_FEE,
+          quantity: 1,
+          id: "DELIVERY",
+          description: "Taxa de entrega fixa"
+        }
+      ];
+
       const response = await fetch(BACKEND_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          products: cart,
+          products: productsWithDelivery, // Enviando lista com a taxa incluída
           customer: {
             name: customer.nome,
             phone: formattedPhone,
@@ -465,7 +488,17 @@ export default function App() {
         })
       });
 
-      const responseData = await response.json();
+      // ✅ TRATAMENTO DE RESPOSTA NÃO-JSON (EVITA O CRASH)
+      const textResponse = await response.text();
+      let responseData;
+      try {
+        responseData = JSON.parse(textResponse);
+      } catch (e) {
+        console.error("❌ Resposta do servidor não é JSON:", textResponse);
+        alert("Erro no servidor de pagamento (500). Verifique os logs.");
+        return null;
+      }
+
       console.log("✅ Resposta COMPLETA do Servidor:", JSON.stringify(responseData, null, 2));
 
       if (!response.ok) {
@@ -521,8 +554,11 @@ export default function App() {
     setIsProcessingPayment(false);
 
     if (billing) {
+      console.log("🔓 Abrindo Modal de Pagamento com:", billing);
       setPaymentData(billing);
       setPaymentModalOpen(true);
+    } else {
+      console.log("🔒 Modal não abriu porque 'billing' veio vazio.");
     }
   };
 
@@ -538,7 +574,7 @@ export default function App() {
       items: cart,
       customer: customer, 
       paymentMethod: 'PIX',
-      paymentStatus: 'PAGO'
+      paymentStatus: 'PAGO' // Já entra como PAGO
     };
 
     const { error } = await supabase.from(COLLECTION_ORDERS).insert(payload);
