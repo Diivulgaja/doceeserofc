@@ -5,7 +5,7 @@ import {
   ShoppingBag, LogOut, Bell, BellOff, MessageCircle, 
   MapPin, Phone, User, DollarSign, TrendingUp, Calendar, 
   Menu, X, Search, ChevronRight, Zap, Printer, ChefHat, Bike, Cake, 
-  Eye, EyeOff, Edit
+  Eye, EyeOff, AlertTriangle
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
@@ -19,10 +19,10 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 /* --- CONFIGURAÇÕES --- */
 const ADMIN_PASSWORD = '071224';
 const TABLE = 'doceeser_pedidos';
-const AVAILABILITY_TABLE = 'doceeser_availability'; // Nova tabela para controle
+const AVAILABILITY_TABLE = 'doceeser_availability'; 
 const MOTOBOY_NUMBER = '5548991692018'; 
 
-// --- PRODUTOS (Cópia para o Admin saber o que listar) ---
+// --- LISTA DE PRODUTOS ---
 const ACAI_ID = 18;
 const ACAI_BASE_PRICE = 17.90;
 const PRODUCTS_LIST = [
@@ -52,7 +52,6 @@ const formatDate = (dateStr) => {
   return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 };
 
-// Calcula tempo decorrido desde o pedido
 const getElapsedTime = (dateStr) => {
   if (!dateStr) return '0min';
   const diff = new Date() - new Date(dateStr);
@@ -69,16 +68,13 @@ export default function Admin() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [view, setView] = useState('kanban'); // 'kanban' | 'dashboard' | 'menu'
+  const [view, setView] = useState('kanban'); 
   const [autoSendWhatsapp, setAutoSendWhatsapp] = useState(false);
   const [stats, setStats] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [now, setNow] = useState(new Date());
-  
-  // Estado para disponibilidade dos produtos
   const [productAvailability, setProductAvailability] = useState({});
 
-  // Atualiza timers a cada minuto
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(interval);
@@ -101,7 +97,6 @@ export default function Admin() {
     }
   }, []);
 
-  // Tocar som
   const playSound = () => {
     try {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); 
@@ -110,7 +105,6 @@ export default function Admin() {
     } catch (e) { console.warn('Erro audio', e); }
   };
 
-  // WhatsApp
   const formatWhatsappMessage = (order) => {
     const customer = order.customer || {};
     const fullAddress = `${customer.rua || ''}, ${customer.numero || ''} - ${customer.bairro || ''}`.trim();
@@ -133,43 +127,61 @@ export default function Admin() {
     window.open(`https://wa.me/${MOTOBOY_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  // Carregar Disponibilidade
   const fetchAvailability = async () => {
     if (!supabase) return;
     try {
       const { data, error } = await supabase.from(AVAILABILITY_TABLE).select('*');
       if (!error && data) {
         const map = {};
-        // Assume que tudo é true se não tiver no banco, mas aqui carregamos o que tem
-        // Se a tabela não existir ainda, isso pode falhar silenciosamente ou retornar erro
         data.forEach(item => { map[item.id] = item.is_active; });
         setProductAvailability(map);
       }
-    } catch (e) { console.log('Tabela de disponibilidade talvez não exista ainda', e); }
+    } catch (e) { console.log('Erro ao buscar disponibilidade', e.message); }
   };
 
-  // Alternar Disponibilidade
   const toggleProduct = async (productId, currentStatus) => {
-    if (!supabase) return;
-    
-    // Status padrão é true se undefined
+    if (!supabase) return alert("Erro: Supabase não conectado.");
     const nextStatus = currentStatus === undefined ? false : !currentStatus;
-    
-    // Atualiza localmente
     setProductAvailability(prev => ({ ...prev, [productId]: nextStatus }));
-
-    // Persiste no Supabase
     try {
-      const { error } = await supabase
-        .from(AVAILABILITY_TABLE)
-        .upsert({ id: productId, is_active: nextStatus })
-        .select();
-        
-      if (error) console.error("Erro ao salvar status:", error);
+      const { error } = await supabase.from(AVAILABILITY_TABLE).upsert({ id: productId, is_active: nextStatus });
+      if (error) {
+        console.error("Erro Supabase:", error);
+        setProductAvailability(prev => ({ ...prev, [productId]: !nextStatus }));
+      }
     } catch (e) { console.error("Erro ao salvar status:", e); }
   };
 
-  // Fetch e Realtime
+  // --- FUNÇÃO PARA LIMPAR PEDIDOS ---
+  const clearAllOrders = async () => {
+    if (!supabase) return;
+    const confirm1 = window.confirm("⚠️ ATENÇÃO: Isso apagará TODOS os pedidos do painel.\n\nDeseja continuar?");
+    if (confirm1) {
+       const confirm2 = window.confirm("Tem certeza absoluta? Essa ação não pode ser desfeita e zerará o faturamento de hoje.");
+       if (confirm2) {
+          setLoading(true);
+          try {
+            // Apaga tudo que NÃO for conta de usuário
+            const { error } = await supabase
+              .from(TABLE)
+              .delete()
+              .neq('status', 'user_account'); 
+            
+            if (error) {
+               alert("Erro ao limpar: " + error.message);
+            } else {
+               alert("Painel limpo com sucesso!");
+               setOrders([]);
+               setStats({ count: 0, total: 0 });
+            }
+          } catch (e) {
+            alert("Erro de conexão ao limpar.");
+          }
+          setLoading(false);
+       }
+    }
+  };
+
   const fetchOrders = async () => {
     if (!supabase) return;
     setLoading(true);
@@ -226,7 +238,6 @@ export default function Admin() {
     setOrders(updated);
   };
 
-  // Separação por colunas (Kanban)
   const columns = useMemo(() => {
     return {
       novos: orders.filter(o => o.status === 'novo'),
@@ -237,7 +248,6 @@ export default function Admin() {
     };
   }, [orders]);
 
-  // --- TELA DE LOGIN ---
   if (!isAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -266,11 +276,9 @@ export default function Admin() {
     );
   }
 
-  // --- LAYOUT PRINCIPAL ---
   return (
     <div className="flex h-screen bg-gray-100 font-sans text-gray-800 overflow-hidden">
       
-      {/* SIDEBAR */}
       <aside className="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-6 z-20 shadow-sm">
         <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 font-bold text-xl mb-4 shadow-sm">
           <Cake className="w-6 h-6" />
@@ -281,6 +289,15 @@ export default function Admin() {
         <SidebarIcon icon={TrendingUp} active={view === 'dashboard'} onClick={() => setView('dashboard')} tooltip="Desempenho" />
         
         <div className="mt-auto flex flex-col gap-4">
+          {/* Botão de Limpar Pedidos */}
+          <button 
+            onClick={clearAllOrders}
+            className="p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition"
+            title="Zerar Sistema (Apagar Tudo)"
+          >
+            <Trash2 className="w-6 h-6" />
+          </button>
+
           <button 
             onClick={() => setSoundEnabled(!soundEnabled)} 
             className={`p-3 rounded-xl transition ${soundEnabled ? 'text-amber-600 bg-amber-50' : 'text-gray-400 hover:text-gray-600'}`}
@@ -298,10 +315,8 @@ export default function Admin() {
         </div>
       </aside>
 
-      {/* CONTEÚDO */}
       <main className="flex-1 flex flex-col overflow-hidden bg-gray-100">
         
-        {/* HEADER SUPERIOR */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
           <div>
             <h2 className="text-xl font-bold text-gray-800 tracking-tight">
@@ -327,7 +342,6 @@ export default function Admin() {
           </div>
         </header>
 
-        {/* ÁREA DE VISUALIZAÇÃO */}
         <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
           
           {view === 'kanban' && (
@@ -364,14 +378,11 @@ export default function Admin() {
             </div>
           )}
 
-          {/* VIEW: CARDÁPIO (NOVO) */}
           {view === 'menu' && (
             <div className="h-full overflow-y-auto">
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
                  {PRODUCTS_LIST.map(product => {
-                    // Se estiver undefined, considera true (disponível por padrão)
                     const isAvailable = productAvailability[product.id] !== false;
-                    
                     return (
                       <div key={product.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-all ${isAvailable ? 'border-gray-200' : 'border-red-200 opacity-75 grayscale'}`}>
                         <div className="h-32 bg-gray-100 relative">
@@ -418,21 +429,10 @@ export default function Admin() {
   );
 }
 
-/* --- COMPONENTES VISUAIS --- */
-
 const SidebarIcon = ({ icon: Icon, active, onClick, tooltip }) => (
-  <button 
-    onClick={onClick}
-    className={`p-4 rounded-2xl transition-all duration-300 group relative ${
-      active 
-      ? 'bg-amber-100 text-amber-600 shadow-sm' 
-      : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-    }`}
-  >
+  <button onClick={onClick} className={`p-4 rounded-2xl transition-all duration-300 group relative ${active ? 'bg-amber-100 text-amber-600 shadow-sm' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}>
     <Icon className="w-6 h-6" />
-    <span className="absolute left-16 bg-gray-800 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 font-medium shadow-xl">
-      {tooltip}
-    </span>
+    <span className="absolute left-16 bg-gray-800 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 font-medium shadow-xl">{tooltip}</span>
   </button>
 );
 
@@ -457,7 +457,6 @@ const EmptyState = ({ message }) => (
 
 const OrderCard = ({ order, type, onAction, onZap, isFinished }) => {
   const isNew = type === 'novo';
-  
   const getActionLabel = () => {
     switch(type) {
         case 'novo': return 'ACEITAR';
@@ -467,7 +466,6 @@ const OrderCard = ({ order, type, onAction, onZap, isFinished }) => {
         default: return '';
     }
   };
-
   const getActionColor = () => {
     switch(type) {
         case 'novo': return 'bg-amber-600 hover:bg-amber-700';
@@ -480,8 +478,6 @@ const OrderCard = ({ order, type, onAction, onZap, isFinished }) => {
   
   return (
     <div className={`bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex flex-col group ${isNew ? 'ring-2 ring-amber-400' : ''}`}>
-      
-      {/* Header Compacto */}
       <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-50">
         <div>
           <div className="flex items-center gap-2">
@@ -498,44 +494,25 @@ const OrderCard = ({ order, type, onAction, onZap, isFinished }) => {
            </span>
         </div>
       </div>
-
-      {/* Corpo Compacto */}
       <div className="flex-1 mb-2">
          <ul className="space-y-1">
             {Array.isArray(order.items) ? order.items.map((it, i) => (
               <li key={i} className="text-xs text-gray-700 leading-tight">
                  <span className="font-bold mr-1">{it.quantity}x</span>
                  {it.name}
-                 {it.toppings && it.toppings.length > 0 && (
-                   <span className="text-[10px] text-gray-400 block pl-4">+ {it.toppings[0]}...</span>
-                 )}
+                 {it.toppings && it.toppings.length > 0 && <span className="text-[10px] text-gray-400 block pl-4">+ {it.toppings[0]}...</span>}
               </li>
             )) : <li className="text-gray-400 italic text-[10px]">Sem itens</li>}
          </ul>
       </div>
-
       <div className="flex justify-between items-center text-xs font-bold text-gray-800 border-t border-gray-50 pt-2 mb-2">
         <span>Total:</span>
         <span>{formatCurrency(order.total)}</span>
       </div>
-
-      {/* Botões Compactos */}
       {!isFinished && (
         <div className="flex gap-2">
-           <button 
-             onClick={() => onAction(order.id)}
-             className={`flex-1 py-1.5 rounded text-[10px] font-bold text-white transition active:scale-[0.98] ${getActionColor()}`}
-           >
-             {getActionLabel()}
-           </button>
-
-           <button 
-             onClick={() => onZap(order)}
-             className="px-2 rounded border border-gray-200 bg-gray-50 text-gray-500 hover:bg-green-50 hover:text-green-600 transition"
-             title="WhatsApp"
-           >
-             <MessageCircle className="w-4 h-4" />
-           </button>
+           <button onClick={() => onAction(order.id)} className={`flex-1 py-1.5 rounded text-[10px] font-bold text-white transition active:scale-[0.98] ${getActionColor()}`}>{getActionLabel()}</button>
+           <button onClick={() => onZap(order)} className="px-2 rounded border border-gray-200 bg-gray-50 text-gray-500 hover:bg-green-50 hover:text-green-600 transition" title="WhatsApp"><MessageCircle className="w-4 h-4" /></button>
         </div>
       )}
     </div>
