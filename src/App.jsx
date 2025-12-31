@@ -4,12 +4,12 @@ import {
   ShoppingCart, Plus, Minus, X, Home, ChevronRight, Truck, MapPin,
   Loader2, Cake, Heart, Trash2, Check, Clock, Utensils, Star, Phone,
   QrCode, Copy, CreditCard, Bike, Package, User, Lock, Gift, LogOut,
-  ChevronDown
+  ChevronDown, AlertCircle, CheckCircle, Info, FileText
 } from "lucide-react";
 
 /* ------------- CONFIGURAÇÕES ------------- */
 const COLLECTION_ORDERS = "doceeser_pedidos"; 
-const AVAILABILITY_TABLE = "doceeser_availability"; // Tabela para ler disponibilidade
+const AVAILABILITY_TABLE = "doceeser_availability";
 const DELIVERY_FEE = 2.99;
 const ETA_TEXT = "20–35 min";
 const LOYALTY_GOAL = 10; 
@@ -18,7 +18,6 @@ const LOYALTY_GOAL = 10;
 const LOGO_URL = "https://i.imgur.com/4LsEEuy.jpeg";
 
 // URL DO SEU BACKEND LOCAL
-// Certifique-se de ter o backend rodando com 'node server.js' na pasta backend
 const API_URL = "http://localhost:3001/create-payment";
 
 // Chaves do Supabase
@@ -71,24 +70,86 @@ const STATUS_UI = {
   novo: { label: "Recebido", message: "Aguardando o restaurante confirmar.", icon: Check, color: "text-blue-600", bg: "bg-blue-100", bar: "w-[10%]" },
   preparando: { label: "Em Preparo", message: "A cozinha já está preparando suas delícias!", icon: Utensils, color: "text-amber-600", bg: "bg-amber-100", bar: "w-[50%]" },
   pronto: { label: "Saiu para Entrega", message: "Seu pedido está a caminho da sua casa.", icon: Bike, color: "text-indigo-600", bg: "bg-indigo-100", bar: "w-[80%]" },
-  em_rota: { label: "Em Rota", message: "O motoboy está a caminho!", icon: Bike, color: "text-purple-600", bg: "bg-purple-100", bar: "w-[90%]" },
   entregue: { label: "Entregue", message: "Pedido entregue. Bom apetite!", icon: Star, color: "text-green-600", bg: "bg-green-100", bar: "w-full" }
 };
 
 const formatBR = (value) => `R$ ${Number(value || 0).toFixed(2).replace('.', ',')}`;
 
-// --- COMPONENTES ---
+// --- COMPONENTES AUXILIARES ---
 
-const AuthModal = ({ isOpen, onClose, onAuth }) => {
+// Componente de Notificação (Toast)
+const ToastContainer = ({ toasts, removeToast }) => {
+  return (
+    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+      {toasts.map((toast) => (
+        <div 
+          key={toast.id} 
+          className={`
+            pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border animate-slideIn
+            ${toast.type === 'success' ? 'bg-white border-green-200 text-green-800' : 
+              toast.type === 'error' ? 'bg-white border-red-200 text-red-800' : 'bg-white border-gray-200 text-gray-800'}
+          `}
+        >
+          {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-green-500" />}
+          {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-red-500" />}
+          {toast.type === 'info' && <Info className="w-5 h-5 text-blue-500" />}
+          <span className="text-sm font-medium">{toast.message}</span>
+          <button onClick={() => removeToast(toast.id)} className="ml-2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Modal de Termos
+const TermsModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl relative animate-slideUp max-h-[80vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><FileText className="w-5 h-5 text-amber-600"/> Termos de Uso</h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full"><X className="w-5 h-5 text-gray-500"/></button>
+        </div>
+        <div className="overflow-y-auto pr-2 text-sm text-gray-600 space-y-4 custom-scrollbar">
+          <p>Bem-vindo ao Doce É Ser! Ao utilizar nosso serviço, você concorda com os seguintes termos:</p>
+          <div>
+            <strong className="text-gray-800">1. Pedidos e Entrega</strong>
+            <p>Os pedidos estão sujeitos à disponibilidade. O tempo de entrega é uma estimativa e pode variar conforme a demanda e condições climáticas.</p>
+          </div>
+          <div>
+            <strong className="text-gray-800">2. Pagamentos</strong>
+            <p>Aceitamos pagamentos via Pix. Em caso de falha no pagamento, o pedido não será processado.</p>
+          </div>
+          <div>
+            <strong className="text-gray-800">3. Cadastro</strong>
+            <p>Você é responsável por manter seus dados atualizados. O CPF é necessário para emissão de nota fiscal e segurança.</p>
+          </div>
+          <div>
+            <strong className="text-gray-800">4. Privacidade</strong>
+            <p>Seus dados são utilizados apenas para processamento de pedidos e melhoria do serviço, conforme a LGPD.</p>
+          </div>
+        </div>
+        <button onClick={onClose} className="mt-6 w-full bg-amber-600 text-white py-3 rounded-xl font-bold hover:bg-amber-700 transition">
+          Entendi
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const AuthModal = ({ isOpen, onClose, onAuth, onOpenTerms }) => {
   if (!isOpen) return null;
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '', password: '', confirmPassword: '', cpf: '' });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isRegister) {
-      if (formData.password !== formData.confirmPassword) return alert("Senhas não conferem.");
-      if (formData.password.length < 4) return alert("Senha muito curta.");
+      if (!acceptedTerms) return onAuth('error', "Você precisa aceitar os termos de uso para criar a conta.");
+      if (formData.password !== formData.confirmPassword) return onAuth('error', "Senhas não conferem.");
+      if (formData.password.length < 4) return onAuth('error', "Senha muito curta.");
       onAuth('register', formData);
     } else {
       onAuth('login', formData);
@@ -128,10 +189,24 @@ const AuthModal = ({ isOpen, onClose, onAuth }) => {
             <input required type="password" className="w-full p-3 bg-gray-50 rounded-xl border focus:border-amber-500 outline-none" placeholder="******" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
           </div>
           {isRegister && (
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Confirmar Senha</label>
-              <input required type="password" className="w-full p-3 bg-gray-50 rounded-xl border focus:border-amber-500 outline-none" placeholder="******" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
-            </div>
+            <>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 uppercase">Confirmar Senha</label>
+                <input required type="password" className="w-full p-3 bg-gray-50 rounded-xl border focus:border-amber-500 outline-none" placeholder="******" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <input 
+                  type="checkbox" 
+                  id="terms" 
+                  checked={acceptedTerms} 
+                  onChange={(e) => setAcceptedTerms(e.target.checked)} 
+                  className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 border-gray-300 cursor-pointer"
+                />
+                <label htmlFor="terms" className="text-xs text-gray-600 select-none cursor-pointer">
+                  Aceito os <span className="text-amber-600 font-bold hover:underline" onClick={(e) => { e.preventDefault(); onOpenTerms(); }}>Termos de Uso</span> e Privacidade
+                </label>
+              </div>
+            </>
           )}
           <button type="submit" className="w-full bg-amber-600 text-white py-3 rounded-xl font-bold hover:bg-amber-700 transition shadow-lg shadow-amber-600/20">
             {isRegister ? 'Cadastrar' : 'Entrar'}
@@ -153,7 +228,7 @@ const PaymentModal = ({ isOpen, onClose, data, onConfirm }) => {
   const copyToClipboard = () => {
     if (data.pix && data.pix.copypaste) {
       navigator.clipboard.writeText(data.pix.copypaste);
-      alert("Código Pix copiado!");
+      alert("Código Pix copiado!"); // Mantido alert aqui pois é um feedback nativo rápido, mas poderia ser toast
     }
   };
 
@@ -168,7 +243,6 @@ const PaymentModal = ({ isOpen, onClose, data, onConfirm }) => {
         </div>
         <div className="p-8 flex flex-col items-center">
           <div className="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center mb-6 border-2 border-dashed border-gray-300 overflow-hidden relative group">
-             {/* Verifica se existe URL do QR code, senão usa ícone */}
              <div className="absolute inset-0 flex flex-col items-center justify-center bg-white opacity-0 group-hover:opacity-10 text-xs font-bold text-gray-500">QR Code</div>
              <div className="z-10 bg-white p-2 rounded-lg shadow-sm flex items-center justify-center w-full h-full">
                 <QrCode className="w-32 h-32 text-gray-800" />
@@ -373,6 +447,7 @@ export default function App() {
   const [acaiModalProduct, setAcaiModalProduct] = useState(null);
   const [user, setUser] = useState(null); 
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false); // NOVO
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); 
   const [loyaltyProgress, setLoyaltyProgress] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -383,6 +458,17 @@ export default function App() {
   const [orderStatus, setOrderStatus] = useState('novo');
   // Estado para produtos disponíveis
   const [availableProducts, setAvailableProducts] = useState({});
+  // Estado para toasts
+  const [toasts, setToasts] = useState([]);
+
+  // Função para adicionar toast
+  const showToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  };
 
   useEffect(() => {
     if (window.supabase && window.supabase.createClient) {
@@ -419,8 +505,8 @@ export default function App() {
       });
       fetchLoyalty(parsedUser.phone);
     }
-
-    // Carregar disponibilidade de produtos
+    
+    // Carregar Disponibilidade de Produtos
     fetchProductAvailability();
   }, [supabase]);
 
@@ -454,29 +540,42 @@ export default function App() {
     const uniqueId = product.isCustom ? product.uniqueId : product.id;
     setCart(prev => {
       const existing = prev.find(item => (item.isCustom ? item.uniqueId === uniqueId : item.id === product.id));
-      if (existing) return prev.map(item => (item === existing ? { ...item, quantity: item.quantity + quantity } : item));
+      if (existing) {
+        showToast(`Quantidade de ${product.name} atualizada!`, 'success');
+        return prev.map(item => (item === existing ? { ...item, quantity: item.quantity + quantity } : item));
+      }
+      showToast(`${product.name} adicionado ao carrinho!`, 'success');
       return [...prev, { ...product, quantity, toppings, uniqueId }];
     });
   };
 
   const removeFromCart = (itemId) => {
     setCart(prev => prev.filter(item => (item.uniqueId || item.id) !== itemId));
+    showToast("Item removido do carrinho.", 'info');
   };
 
   const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const finalTotal = cartTotal + DELIVERY_FEE;
 
   const handleAuth = async (type, data) => {
-    if (!supabase) return alert("Conectando ao servidor... tente novamente.");
+    if (type === 'error') {
+      showToast(data, 'error'); // Se for mensagem de erro vinda do modal
+      return;
+    }
+
+    if (!supabase) return showToast("Conectando ao servidor... tente novamente.", 'error');
     const userId = `user_${data.phone.replace(/\D/g, '')}`; 
     try {
       if (type === 'login') {
         const { data: userData } = await supabase.from(COLLECTION_ORDERS).select('customer').eq('id', userId).maybeSingle();
-        if (userData && userData.customer && userData.customer.password === data.password) loginUser(userData.customer);
-        else alert("Telefone não encontrado ou senha incorreta.");
+        if (userData && userData.customer && userData.customer.password === data.password) {
+           loginUser(userData.customer);
+           showToast(`Bem-vindo de volta, ${userData.customer.name}!`, 'success');
+        }
+        else showToast("Telefone não encontrado ou senha incorreta.", 'error');
       } else if (type === 'register') {
         const { data: existing } = await supabase.from(COLLECTION_ORDERS).select('id').eq('id', userId).maybeSingle();
-        if (existing) return alert("Este telefone já possui cadastro.");
+        if (existing) return showToast("Este telefone já possui cadastro.", 'error');
         const newUserProfile = { 
             name: data.name, 
             phone: data.phone, 
@@ -486,10 +585,16 @@ export default function App() {
             createdAt: new Date().toISOString() 
         };
         const { error } = await supabase.from(COLLECTION_ORDERS).insert({ id: userId, status: 'user_account', total: 0, customer: newUserProfile, items: [] });
-        if (error) alert("Erro ao criar conta. Tente novamente.");
-        else { loginUser(newUserProfile); alert("Conta criada com sucesso!"); }
+        if (error) showToast("Erro ao criar conta. Tente novamente.", 'error');
+        else { 
+          loginUser(newUserProfile); 
+          showToast("Conta criada com sucesso!", 'success'); 
+        }
       }
-    } catch (e) { console.error("Auth error:", e); alert("Erro de conexão."); }
+    } catch (e) { 
+      console.error("Auth error:", e); 
+      showToast("Erro de conexão.", 'error'); 
+    }
   };
 
   const loginUser = (userData) => {
@@ -515,10 +620,11 @@ export default function App() {
     setLoyaltyProgress(0);
     setCustomer({ nome: '', email: '', telefone: '', rua: '', numero: '', bairro: '', cpf: '' });
     setIsUserMenuOpen(false);
+    showToast("Você saiu da conta.", 'info');
   };
 
   const handleInitiatePayment = async () => {
-    if (!customer.nome || !customer.email || !customer.telefone || !customer.rua || !customer.cpf) return alert("Por favor, preencha todos os dados, incluindo CPF e email.");
+    if (!customer.nome || !customer.email || !customer.telefone || !customer.rua || !customer.cpf) return showToast("Por favor, preencha todos os dados, incluindo CPF e email.", 'error');
     
     if (user && supabase) {
       const newAddress = { rua: customer.rua, numero: customer.numero, bairro: customer.bairro };
@@ -570,7 +676,7 @@ export default function App() {
 
     } catch (error) {
       console.error("Erro Pagamento:", error);
-      alert(`Erro no pagamento: ${error.message}`);
+      showToast(`Erro no pagamento: ${error.message}`, 'error');
     }
     
     setIsProcessingPayment(false);
@@ -583,8 +689,8 @@ export default function App() {
     const { error } = await supabase.from(COLLECTION_ORDERS).insert(payload);
     if (error) {
        console.error(error);
-       if (error.code === 'PGRST204') alert("Erro de compatibilidade. Tente novamente mais tarde.");
-       else alert("Erro ao enviar pedido.");
+       if (error.code === 'PGRST204') showToast("Erro de compatibilidade. Tente novamente mais tarde.", 'error');
+       else showToast("Erro ao enviar pedido.", 'error');
     } else {
       setLastOrderId(orderId);
       setOrderStatus('novo');
@@ -592,6 +698,7 @@ export default function App() {
       setPaymentModalOpen(false);
       setPaymentData(null);
       setPage('tracking');
+      showToast("Pedido enviado com sucesso!", 'success');
     }
   };
 
@@ -605,6 +712,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
+      <ToastContainer toasts={toasts} removeToast={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+
       <header className="sticky top-0 bg-white/90 backdrop-blur-lg shadow-sm z-40 px-4 py-3 border-b border-gray-100">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setPage('menu')}>
@@ -767,7 +876,13 @@ export default function App() {
 
       <AcaiModal product={acaiModalProduct} onClose={() => setAcaiModalProduct(null)} onAdd={addToCart} />
       <PaymentModal isOpen={paymentModalOpen} onClose={() => setPaymentModalOpen(false)} data={paymentData} onConfirm={handleConfirmOrder} />
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} onAuth={handleAuth} />
+      <AuthModal 
+        isOpen={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)} 
+        onAuth={handleAuth} 
+        onOpenTerms={() => setTermsModalOpen(true)}
+      />
+      <TermsModal isOpen={termsModalOpen} onClose={() => setTermsModalOpen(false)} />
 
       <footer className="bg-white border-t border-gray-100 py-10 text-center">
         <div className="flex items-center justify-center gap-2 mb-2 opacity-50"><Cake className="w-5 h-5"/><span className="font-bold">Doce É Ser</span></div>
