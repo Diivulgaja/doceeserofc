@@ -4,7 +4,8 @@ import {
   Trash2, Clock, Check, Loader2, LayoutDashboard, 
   ShoppingBag, LogOut, Bell, BellOff, MessageCircle, 
   MapPin, Phone, User, DollarSign, TrendingUp, Calendar, 
-  Menu, X, Search, ChevronRight, Zap, Printer, ChefHat, Bike, Cake
+  Menu, X, Search, ChevronRight, Zap, Printer, ChefHat, Bike, Cake, 
+  Eye, EyeOff, Edit
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
@@ -18,7 +19,30 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 /* --- CONFIGURAÇÕES --- */
 const ADMIN_PASSWORD = '071224';
 const TABLE = 'doceeser_pedidos';
+const AVAILABILITY_TABLE = 'doceeser_availability'; // Nova tabela para controle
 const MOTOBOY_NUMBER = '5548991692018'; 
+
+// --- PRODUTOS (Cópia para o Admin saber o que listar) ---
+const ACAI_ID = 18;
+const ACAI_BASE_PRICE = 17.90;
+const PRODUCTS_LIST = [
+  { id: 9, name: "Red velvet com Ninho e Morangos", price: 15.90, category: 'bolos', imageUrl: "https://i.imgur.com/3UDWhLR.png" },
+  { id: 2, name: "Bolo Cenoura com chocolate", price: 15.90, category: 'bolos', imageUrl: "https://i.imgur.com/aaUdL2b.png" },
+  { id: 10, name: "Chocolate com Morangos", price: 15.90, category: 'bolos', imageUrl: "https://i.imgur.com/MMbQohl.png" },
+  { id: 13, name: "Chocolatudo!!!", price: 15.90, category: 'bolos', imageUrl: "https://i.imgur.com/3Hva4Df.png" },
+  { id: 16, name: "Bolo de Ferreiro com Nutella", price: 16.90, category: 'bolos', imageUrl: "https://i.imgur.com/OamNqov.png" },
+  { id: 17, name: "Copo Oreo com Nutella", price: 24.90, category: 'copo_felicidade', imageUrl: "https://i.imgur.com/1EZRMVl.png" },
+  { id: 24, name: "Copo Maracujá com Brownie", price: 24.90, category: 'copo_felicidade', imageUrl: "https://i.imgur.com/PypEwAz.png" },
+  { id: 25, name: "Copo Brownie Dois Amores", price: 22.90, category: 'copo_felicidade', imageUrl: "https://i.imgur.com/mMQtXDB.png" },
+  { id: 26, name: "Copo Encanto de Ninho e Morangos", price: 22.90, category: 'copo_felicidade', imageUrl: "https://i.imgur.com/EgFhhwL.png" },
+  { id: 27, name: "Copo de Brownie com Ferreiro e Nutella", price: 26.90, category: 'copo_felicidade', imageUrl: "https://i.imgur.com/t6xeVDf.png" },
+  { id: 20, name: "Brownie De Ninho e Nutella", price: 11.90, category: 'brownie', imageUrl: "https://i.imgur.com/vWdYZ8K.png" },
+  { id: 21, name: "Brownie Recheado com Nutella e Morangos", price: 22.90, category: 'brownie', imageUrl: "https://i.imgur.com/P1pprjF.png" },
+  { id: 22, name: "Brownie Ferreiro com Nutella", price: 11.90, category: 'brownie', imageUrl: "https://i.imgur.com/rmp3LtH.png" },
+  { id: 23, name: "Brownie Duo com Oreo", price: 11.90, category: 'brownie', imageUrl: "https://i.imgur.com/8IbcWWj.png" },
+  { id: ACAI_ID, name: "Copo de Açaí 250ml", price: ACAI_BASE_PRICE, category: 'acai', imageUrl: "https://i.imgur.com/OrErP8N.png" },
+  { id: 6, name: "Empada de Camarão e Requeijão", price: 12.00, category: 'salgado', imageUrl: "https://i.imgur.com/rV18DkJ.png" }
+];
 
 /* --- UTILITÁRIOS --- */
 const formatCurrency = (val) => `R$ ${Number(val || 0).toFixed(2).replace('.', ',')}`;
@@ -45,11 +69,14 @@ export default function Admin() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [view, setView] = useState('kanban'); // 'kanban' | 'dashboard'
+  const [view, setView] = useState('kanban'); // 'kanban' | 'dashboard' | 'menu'
   const [autoSendWhatsapp, setAutoSendWhatsapp] = useState(false);
   const [stats, setStats] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [now, setNow] = useState(new Date());
+  
+  // Estado para disponibilidade dos produtos
+  const [productAvailability, setProductAvailability] = useState({});
 
   // Atualiza timers a cada minuto
   useEffect(() => {
@@ -106,6 +133,42 @@ export default function Admin() {
     window.open(`https://wa.me/${MOTOBOY_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
+  // Carregar Disponibilidade
+  const fetchAvailability = async () => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase.from(AVAILABILITY_TABLE).select('*');
+      if (!error && data) {
+        const map = {};
+        // Assume que tudo é true se não tiver no banco, mas aqui carregamos o que tem
+        // Se a tabela não existir ainda, isso pode falhar silenciosamente ou retornar erro
+        data.forEach(item => { map[item.id] = item.is_active; });
+        setProductAvailability(map);
+      }
+    } catch (e) { console.log('Tabela de disponibilidade talvez não exista ainda', e); }
+  };
+
+  // Alternar Disponibilidade
+  const toggleProduct = async (productId, currentStatus) => {
+    if (!supabase) return;
+    
+    // Status padrão é true se undefined
+    const nextStatus = currentStatus === undefined ? false : !currentStatus;
+    
+    // Atualiza localmente
+    setProductAvailability(prev => ({ ...prev, [productId]: nextStatus }));
+
+    // Persiste no Supabase
+    try {
+      const { error } = await supabase
+        .from(AVAILABILITY_TABLE)
+        .upsert({ id: productId, is_active: nextStatus })
+        .select();
+        
+      if (error) console.error("Erro ao salvar status:", error);
+    } catch (e) { console.error("Erro ao salvar status:", e); }
+  };
+
   // Fetch e Realtime
   const fetchOrders = async () => {
     if (!supabase) return;
@@ -131,6 +194,7 @@ export default function Admin() {
   useEffect(() => {
     if (!isAuth || !supabase) return;
     fetchOrders();
+    fetchAvailability();
 
     const channel = supabase.channel('admin-orders')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: TABLE }, payload => {
@@ -213,6 +277,7 @@ export default function Admin() {
         </div>
         
         <SidebarIcon icon={LayoutDashboard} active={view === 'kanban'} onClick={() => setView('kanban')} tooltip="Pedidos" />
+        <SidebarIcon icon={ShoppingBag} active={view === 'menu'} onClick={() => setView('menu')} tooltip="Cardápio" />
         <SidebarIcon icon={TrendingUp} active={view === 'dashboard'} onClick={() => setView('dashboard')} tooltip="Desempenho" />
         
         <div className="mt-auto flex flex-col gap-4">
@@ -239,7 +304,9 @@ export default function Admin() {
         {/* HEADER SUPERIOR */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
           <div>
-            <h2 className="text-xl font-bold text-gray-800 tracking-tight">Gestor de Pedidos</h2>
+            <h2 className="text-xl font-bold text-gray-800 tracking-tight">
+              {view === 'menu' ? 'Gerenciar Cardápio' : 'Gestor de Pedidos'}
+            </h2>
             <div className="flex items-center gap-2 text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full w-fit">
                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Online
             </div>
@@ -265,91 +332,74 @@ export default function Admin() {
           
           {view === 'kanban' && (
             <div className="h-full flex gap-4 min-w-[1200px]">
-              {/* PENDENTE */}
-              <KanbanColumn 
-                title="Pendente" 
-                count={columns.novos.length} 
-                color="border-t-4 border-t-amber-500"
-              >
+              <KanbanColumn title="Pendente" count={columns.novos.length} color="border-t-4 border-t-amber-500">
                 {columns.novos.map(order => (
-                  <OrderCard 
-                    key={order.id} 
-                    order={order} 
-                    type="novo" 
-                    onAction={(id) => updateStatus(id, 'preparando')}
-                    onZap={sendWhatsapp}
-                  />
+                  <OrderCard key={order.id} order={order} type="novo" onAction={(id) => updateStatus(id, 'preparando')} onZap={sendWhatsapp} />
                 ))}
               </KanbanColumn>
 
-              {/* EM PREPARO */}
-              <KanbanColumn 
-                title="Em Preparo" 
-                count={columns.preparando.length} 
-                color="border-t-4 border-t-blue-500"
-              >
+              <KanbanColumn title="Em Preparo" count={columns.preparando.length} color="border-t-4 border-t-blue-500">
                 {columns.preparando.map(order => (
-                  <OrderCard 
-                    key={order.id} 
-                    order={order} 
-                    type="preparando" 
-                    onAction={(id) => updateStatus(id, 'pronto')}
-                    onZap={sendWhatsapp}
-                  />
+                  <OrderCard key={order.id} order={order} type="preparando" onAction={(id) => updateStatus(id, 'pronto')} onZap={sendWhatsapp} />
                 ))}
               </KanbanColumn>
 
-              {/* PRONTO */}
-              <KanbanColumn 
-                title="Pronto" 
-                count={columns.prontos.length} 
-                color="border-t-4 border-t-green-500"
-              >
+              <KanbanColumn title="Pronto" count={columns.prontos.length} color="border-t-4 border-t-green-500">
                 {columns.prontos.map(order => (
-                  <OrderCard 
-                    key={order.id} 
-                    order={order} 
-                    type="pronto" 
-                    onAction={(id) => updateStatus(id, 'em_rota')}
-                    onZap={sendWhatsapp}
-                  />
+                  <OrderCard key={order.id} order={order} type="pronto" onAction={(id) => updateStatus(id, 'em_rota')} onZap={sendWhatsapp} />
                 ))}
               </KanbanColumn>
 
-              {/* EM ROTA */}
-              <KanbanColumn 
-                title="Em Rota" 
-                count={columns.em_rota.length} 
-                color="border-t-4 border-t-purple-500"
-              >
+              <KanbanColumn title="Em Rota" count={columns.em_rota.length} color="border-t-4 border-t-purple-500">
                 {columns.em_rota.map(order => (
-                  <OrderCard 
-                    key={order.id} 
-                    order={order} 
-                    type="em_rota" 
-                    onAction={(id) => updateStatus(id, 'entregue')}
-                    onZap={sendWhatsapp}
-                  />
+                  <OrderCard key={order.id} order={order} type="em_rota" onAction={(id) => updateStatus(id, 'entregue')} onZap={sendWhatsapp} />
                 ))}
               </KanbanColumn>
 
-              {/* ENTREGUE */}
-              <KanbanColumn 
-                title="Entregue" 
-                count={columns.entregues.length} 
-                color="border-t-4 border-t-gray-400"
-              >
+              <KanbanColumn title="Entregue" count={columns.entregues.length} color="border-t-4 border-t-gray-400">
                 {columns.entregues.map(order => (
-                  <OrderCard 
-                    key={order.id} 
-                    order={order} 
-                    type="entregue" 
-                    onAction={() => {}} 
-                    onZap={sendWhatsapp}
-                    isFinished={true}
-                  />
+                  <OrderCard key={order.id} order={order} type="entregue" onAction={() => {}} onZap={sendWhatsapp} isFinished={true} />
                 ))}
               </KanbanColumn>
+            </div>
+          )}
+
+          {/* VIEW: CARDÁPIO (NOVO) */}
+          {view === 'menu' && (
+            <div className="h-full overflow-y-auto">
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
+                 {PRODUCTS_LIST.map(product => {
+                    // Se estiver undefined, considera true (disponível por padrão)
+                    const isAvailable = productAvailability[product.id] !== false;
+                    
+                    return (
+                      <div key={product.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col transition-all ${isAvailable ? 'border-gray-200' : 'border-red-200 opacity-75 grayscale'}`}>
+                        <div className="h-32 bg-gray-100 relative">
+                           <img src={product.imageUrl} className="w-full h-full object-cover" alt={product.name}/>
+                           <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold ${isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                             {isAvailable ? 'ATIVO' : 'INATIVO'}
+                           </div>
+                        </div>
+                        <div className="p-4 flex-1 flex flex-col justify-between">
+                           <div>
+                              <h3 className="font-bold text-gray-800 text-sm">{product.name}</h3>
+                              <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">{product.category}</p>
+                           </div>
+                           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+                              <span className="font-bold text-amber-600">{formatCurrency(product.price)}</span>
+                              <button 
+                                onClick={() => toggleProduct(product.id, isAvailable)}
+                                className={`p-2 rounded-lg transition ${isAvailable ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                                title={isAvailable ? "Desativar Produto" : "Ativar Produto"}
+                              >
+                                {isAvailable ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
+                              </button>
+                           </div>
+                        </div>
+                      </div>
+                    );
+                 })}
+               </div>
             </div>
           )}
 
@@ -395,6 +445,13 @@ const KanbanColumn = ({ title, count, children, color }) => (
     <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-gray-100 custom-scrollbar">
       {children}
     </div>
+  </div>
+);
+
+const EmptyState = ({ message }) => (
+  <div className="flex flex-col items-center justify-center h-48 text-gray-400 bg-white/50 rounded-xl border-2 border-dashed border-gray-200">
+    <ShoppingBag className="w-10 h-10 mb-3 opacity-20" />
+    <span className="text-sm font-medium">{message}</span>
   </div>
 );
 
