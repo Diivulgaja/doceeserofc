@@ -4,7 +4,7 @@ import {
   ShoppingCart, Plus, Minus, X, Home, ChevronRight, Truck, MapPin,
   Loader2, Cake, Heart, Trash2, Check, Clock, Utensils, Star, Phone,
   QrCode, Copy, CreditCard, Bike, Package, User, Lock, Gift, LogOut,
-  ChevronDown, History, FileText, AlertCircle, CheckCircle, Info
+  ChevronDown, History, FileText, AlertCircle, CheckCircle, Info, ExternalLink, RefreshCw, AlertTriangle, Image as ImageIcon, Store
 } from "lucide-react";
 
 /* ------------- CONFIGURAÇÕES ------------- */
@@ -18,7 +18,11 @@ const LOYALTY_GOAL = 10;
 const LOGO_URL = "https://i.imgur.com/4LsEEuy.jpeg";
 
 // CHAVE ABACATE PAY
-const ABACATE_API_KEY = "abc_dev_QdGhCfpcGjZ4AcM2eZaR2nxQ"; 
+const ABACATE_API_KEY = "abc_prod_UjhbqsQL1PSR3TEbsJWWQy4n"; 
+
+// URL DA API VIA PROXY
+const API_URL = "https://corsproxy.io/?https://api.abacatepay.com/v1/billing/create";
+const API_LIST_URL = "https://corsproxy.io/?https://api.abacatepay.com/v1/billing/list";
 
 // SUPABASE
 const SUPABASE_URL = 'https://elpinlotdogazhpdwlqr.supabase.co';
@@ -32,25 +36,25 @@ const ACAI_TOPPINGS = [
   { name: "Amendoim", price: 1.00 },
 ];
 const ACAI_ID = 18;
-const ACAI_BASE_PRICE = 17.90;
+const ACAI_BASE_PRICE = 19.90;
 
 const initialProducts = [
-  { id: 9, name: "Reb velvet com Ninho e Morangos", price: 15.90, category: 'bolos', description: "Massa aveludada e macia, coberta com creme de leite Ninho cremoso.", imageUrl: "https://i.imgur.com/3UDWhLR.png" },
-  { id: 2, name: "Bolo Cenoura com chocolate", price: 15.90, category: 'bolos', description: "Mini vulcão de cenoura com explosão de chocolate.", imageUrl: "https://i.imgur.com/aaUdL2b.png" },
-  { id: 10, name: "Chocolate com Morangos", price: 15.90, category: 'bolos', description: "Bolo fofinho de chocolate com morangos.", imageUrl: "https://i.imgur.com/MMbQohl.png" },
-  { id: 13, name: "Chocolatudo!!!", price: 15.90, category: 'bolos', description: "Bolo com muito chocolate.", imageUrl: "https://i.imgur.com/3Hva4Df.png" },
-  { id: 16, name: "Bolo de Ferreiro com Nutella", price: 16.90, category: 'bolos', description: "Chocolate, amendoim e Nutella.", imageUrl: "https://i.imgur.com/OamNqov.png" },
-  { id: 17, name: "Copo Oreo com Nutella", price: 24.90, category: 'copo_felicidade', description: "Camadas de Ninho, Oreo e Nutella.", imageUrl: "https://i.imgur.com/1EZRMVl.png" },
-  { id: 24, name: "Copo Maracujá com Brownie", price: 24.90, category: 'copo_felicidade', description: "Maracujá, chocolate e brownie.", imageUrl: "https://i.imgur.com/PypEwAz.png" },
-  { id: 25, name: "Copo Brownie Dois Amores", price: 22.90, category: 'copo_felicidade', description: "Dois amores + brownie.", imageUrl: "https://i.imgur.com/mMQtXDB.png" },
-  { id: 26, name: "Copo Encanto de Ninho e Morangos", price: 22.90, category: 'copo_felicidade', description: "Ninho e morangos frescos.", imageUrl: "https://i.imgur.com/EgFhhwL.png" },
-  { id: 27, name: "Copo de Brownie com Ferreiro e Nutella", price: 26.90, category: 'copo_felicidade', description: "Brownie, Ferrero e Nutella.", imageUrl: "https://i.imgur.com/t6xeVDf.png" },
-  { id: 20, name: "Brownie De Ninho e Nutella", price: 11.90, category: 'brownie', description: "Brownie com Ninho e Nutella.", imageUrl: "https://i.imgur.com/vWdYZ8K.png" },
-  { id: 21, name: "Brownie Recheado com Nutella e Morangos", price: 22.90, category: 'brownie', description: "Recheado com Ninho, Nutella e morangos.", imageUrl: "https://i.imgur.com/P1pprjF.png" },
-  { id: 22, name: "Brownie Ferreiro com Nutella", price: 11.90, category: 'brownie', description: "Com Nutella e amendoim.", imageUrl: "https://i.imgur.com/rmp3LtH.png" },
-  { id: 23, name: "Brownie Duo com Oreo", price: 11.90, category: 'brownie', description: "Cobertura de chocolate e Oreo.", imageUrl: "https://i.imgur.com/8IbcWWj.png" },
+  { id: 9, name: "Red velvet com Ninho e Morangos", price: 17.90, category: 'bolos', description: "Massa aveludada e macia, coberta com creme de leite Ninho cremoso.", imageUrl: "https://i.imgur.com/3UDWhLR.png" },
+  { id: 2, name: "Bolo Cenoura com chocolate", price: 17.90, category: 'bolos', description: "Mini vulcão de cenoura com explosão de chocolate.", imageUrl: "https://i.imgur.com/aaUdL2b.png" },
+  { id: 10, name: "Chocolate com Morangos", price: 17.90, category: 'bolos', description: "Bolo fofinho de chocolate com morangos.", imageUrl: "https://i.imgur.com/MMbQohl.png" },
+  { id: 13, name: "Chocolatudo!!!", price: 17.90, category: 'bolos', description: "Bolo com muito chocolate.", imageUrl: "https://i.imgur.com/3Hva4Df.png" },
+  { id: 16, name: "Bolo de Ferreiro com Nutella", price: 18.90, category: 'bolos', description: "Chocolate, amendoim e Nutella.", imageUrl: "https://i.imgur.com/OamNqov.png" },
+  { id: 17, name: "Copo Oreo com Nutella", price: 26.90, category: 'copo_felicidade', description: "Camadas de Ninho, Oreo e Nutella.", imageUrl: "https://i.imgur.com/1EZRMVl.png" },
+  { id: 24, name: "Copo Maracujá com Brownie", price: 26.90, category: 'copo_felicidade', description: "Maracujá, chocolate e brownie.", imageUrl: "https://i.imgur.com/PypEwAz.png" },
+  { id: 25, name: "Copo Brownie Dois Amores", price: 24.90, category: 'copo_felicidade', description: "Dois amores + brownie.", imageUrl: "https://i.imgur.com/mMQtXDB.png" },
+  { id: 26, name: "Copo Encanto de Ninho e Morangos", price: 24.90, category: 'copo_felicidade', description: "Ninho e morangos frescos.", imageUrl: "https://i.imgur.com/EgFhhwL.png" },
+  { id: 27, name: "Copo de Brownie com Ferreiro e Nutella", price: 28.90, category: 'copo_felicidade', description: "Brownie, Ferrero e Nutella.", imageUrl: "https://i.imgur.com/t6xeVDf.png" },
+  { id: 20, name: "Brownie De Ninho e Nutella", price: 13.90, category: 'brownie', description: "Brownie com Ninho e Nutella.", imageUrl: "https://i.imgur.com/vWdYZ8K.png" },
+  { id: 21, name: "Brownie Recheado com Nutella e Morangos", price: 24.90, category: 'brownie', description: "Recheado com Ninho, Nutella e morangos.", imageUrl: "https://i.imgur.com/P1pprjF.png" },
+  { id: 22, name: "Brownie Ferreiro com Nutella", price: 13.90, category: 'brownie', description: "Com Nutella e amendoim.", imageUrl: "https://i.imgur.com/rmp3LtH.png" },
+  { id: 23, name: "Brownie Duo com Oreo", price: 13.90, category: 'brownie', description: "Cobertura de chocolate e Oreo.", imageUrl: "https://i.imgur.com/8IbcWWj.png" },
   { id: ACAI_ID, name: "Copo de Açaí 250ml", price: ACAI_BASE_PRICE, category: 'acai', description: "Monte do seu jeito.", imageUrl: "https://i.imgur.com/OrErP8N.png" },
-  { id: 6, name: "Empada de Camarão e Requeijão", price: 12.00, category: 'salgado', description: "Camarão cremoso.", imageUrl: "https://i.imgur.com/rV18DkJ.png" }
+  { id: 6, name: "Empada de Camarão e Requeijão", price: 14.00, category: 'salgado', description: "Camarão cremoso.", imageUrl: "https://i.imgur.com/rV18DkJ.png" }
 ];
 
 const categories = {
@@ -61,6 +65,16 @@ const categories = {
   acai: 'Açaí',
   salgado: 'Salgados',
 };
+
+// --- CONTEÚDO DA GALERIA (LINKS DO INSTAGRAM) ---
+const GALLERY_CONTENT = [
+  { type: 'instagram', url: "https://www.instagram.com/p/DPCR392EQCb/" },
+  { type: 'instagram', url: "https://www.instagram.com/p/DOv6Y1IEZ05/" },
+  { type: 'instagram', url: "https://www.instagram.com/p/DOtYOWgEa4E/" },
+  { type: 'instagram', url: "https://www.instagram.com/p/DOpEljCEUHd/" },
+  { type: 'instagram', url: "https://www.instagram.com/p/DOOQ_zLEYA0/" },
+  { type: 'instagram', url: "https://www.instagram.com/p/DRc6-CYkqQC/" },
+];
 
 const formatBR = (value) => `R$ ${Number(value || 0).toFixed(2).replace('.', ',')}`;
 const formatDate = (dateStr) => {
@@ -137,7 +151,7 @@ const AuthModal = ({ isOpen, onClose, onAuth, onOpenTerms }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {isRegister && <input required className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="Seu nome" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />}
           <input required type="tel" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="Telefone (11999999999)" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-          {isRegister && <input required type="tel" maxLength="14" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="CPF (Apenas números)" value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} />}
+          {isRegister && <input required type="tel" maxLength="14" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="CPF (Apenas números)" value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} /> }
           <input required type="password" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="Senha" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
           {isRegister && <input required type="password" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="Confirmar Senha" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />}
           {isRegister && (
@@ -156,61 +170,141 @@ const AuthModal = ({ isOpen, onClose, onAuth, onOpenTerms }) => {
   );
 };
 
-const PaymentModal = ({ isOpen, onClose, data, onConfirm }) => {
+const PaymentModal = ({ isOpen, onClose, data, onConfirm, cart }) => {
   if (!isOpen || !data) return null;
 
-  // CORREÇÃO AQUI: Adapta a leitura da resposta da AbacatePay
-  // A API pode retornar o billing dentro de data.data.billing OU data.data (depende do wrapper)
-  // Baseado no log do erro: {"error":null,"data":{ "url": "...", "id": "..." }} 
-  // O objeto de billing é o próprio data.data
+  const [isPaid, setIsPaid] = useState(false);
   const billing = data.data?.billing || data.billing || data; 
-  
-  // URL do pagamento
   const paymentUrl = billing.url;
+  const pixCode = billing.pix?.copypaste;
+  const qrCodeData = pixCode || paymentUrl;
+  const isDevMode = billing.devMode === true; 
 
   const copyToClipboard = () => {
-    // Tenta pegar o código pix se existir (copypaste), senão usa a URL
-    const pixCode = billing.pix?.copypaste || paymentUrl;
-    if (pixCode) {
-      navigator.clipboard.writeText(pixCode);
-      alert("Copiado! Se for um link, cole no navegador.");
-    } else {
-        alert("Erro ao copiar. Tente abrir o link.");
-    }
+    if (qrCodeData) {
+      navigator.clipboard.writeText(qrCodeData);
+      alert("Copiado com sucesso!");
+    } else alert("Erro ao copiar.");
   };
 
+  useEffect(() => {
+    let intervalId;
+    if (isOpen && billing?.id && !isPaid) {
+        intervalId = setInterval(async () => {
+            try {
+                const response = await fetch(API_LIST_URL, {
+                    headers: { "Authorization": `Bearer ${ABACATE_API_KEY}` }
+                });
+                const result = await response.json();
+                const bills = result.data || result.billings || [];
+                const currentBill = bills.find(b => b.id === billing.id);
+                
+                if (currentBill && (currentBill.status === 'PAID' || currentBill.status === 'paid')) {
+                    setIsPaid(true);
+                    clearInterval(intervalId);
+                }
+            } catch (error) { console.warn("Erro polling:", error); }
+        }, 3000);
+    }
+    return () => clearInterval(intervalId);
+  }, [isOpen, billing, isPaid]);
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl scale-100 animate-slideUp">
-        <div className="bg-green-600 p-6 text-center text-white">
-           <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-90" />
-           <h3 className="text-2xl font-bold">Pagamento Criado</h3>
-           <p className="text-green-100 text-sm">Finalize o pagamento para confirmar</p>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      {/* Increased max-width to max-w-4xl */}
+      <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl scale-100 animate-slideUp flex flex-col max-h-[90vh]">
+        <div className="bg-green-600 p-4 text-center text-white shrink-0 flex justify-between items-center">
+           <h3 className="text-xl font-bold flex items-center gap-2"><CreditCard className="w-6 h-6" /> Pagamento Seguro</h3>
+           <button onClick={onClose} className="hover:bg-green-700 p-2 rounded-full"><X className="w-5 h-5 text-white"/></button>
         </div>
-        <div className="p-8 flex flex-col items-center">
-          <div className="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center mb-6 border-2 border-dashed border-gray-300 overflow-hidden relative group">
-             <div className="absolute inset-0 flex flex-col items-center justify-center bg-white opacity-0 group-hover:opacity-10 text-xs font-bold text-gray-500">QR Code</div>
-             <div className="z-10 bg-white p-2 rounded-lg shadow-sm flex items-center justify-center w-full h-full text-center p-4">
-                {/* Se não tiver imagem do QR code, mostra ícone e link */}
-                {paymentUrl ? (
-                    <a href={paymentUrl} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 text-blue-600 hover:text-blue-800">
-                        <QrCode className="w-16 h-16" />
-                        <span className="text-xs underline font-bold">Abrir Pagamento</span>
-                    </a>
-                ) : <QrCode className="w-32 h-32 text-gray-800" />}
+        
+        <div className="flex flex-col md:flex-row h-full overflow-hidden">
+          {/* Coluna Esquerda: Resumo */}
+          <div className="w-full md:w-1/3 bg-gray-50 p-6 border-r border-gray-200 overflow-y-auto hidden md:block">
+             <div className="mb-4">
+                <h4 className="font-bold text-gray-700 text-lg mb-2">Resumo</h4>
+                <ul className="space-y-2 text-sm mb-4">
+                    {cart.map((item, i) => (
+                        <li key={i} className="flex justify-between text-gray-600 border-b border-gray-100 pb-1">
+                            <span>{item.quantity}x {item.name}</span>
+                            <span>{formatBR(item.price * item.quantity)}</span>
+                        </li>
+                    ))}
+                    <li className="flex justify-between text-gray-600 font-medium pt-1">
+                        <span>Entrega</span>
+                        <span>{formatBR(DELIVERY_FEE)}</span>
+                    </li>
+                </ul>
+                <div className="flex justify-between font-black text-xl text-green-700 border-t border-gray-300 pt-3">
+                    <span>Total</span>
+                    <span>{formatBR(billing.amount ? billing.amount / 100 : 0)}</span>
+                </div>
+             </div>
+
+             <div className="mt-auto pt-6 space-y-3">
+                {/* BOTÃO ESTRITAMENTE BLOQUEADO ATÉ STATUS 'PAID' */}
+                <button 
+                    onClick={onConfirm} 
+                    disabled={!isPaid} 
+                    className={`w-full py-4 rounded-xl font-bold shadow-lg transition transform active:scale-[0.98] flex items-center justify-center gap-2
+                      ${!isPaid 
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                        : 'bg-green-600 hover:bg-green-700 text-white shadow-green-600/20'}`}
+                >
+                  {!isPaid ? (
+                    <><RefreshCw className="w-5 h-5 animate-spin"/> Aguardando...</>
+                  ) : (
+                    <><CheckCircle className="w-5 h-5"/> Confirmar Pedido</>
+                  )}
+                </button>
+                {!isPaid && (
+                    <p className="text-xs text-center text-gray-500 animate-pulse">
+                       Realize o pagamento ao lado. O botão liberará automaticamente.
+                    </p>
+                )}
              </div>
           </div>
-          <p className="text-2xl font-black text-gray-800 mb-6 text-center mt-4">Valor: {formatBR(billing.amount ? billing.amount / 100 : 0)}</p>
-          <div className="w-full space-y-3">
-             {paymentUrl && (
-                <a href={paymentUrl} target="_blank" rel="noreferrer" className="block w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-center transition shadow-md">
-                    Pagar Agora (Abrir Link)
-                </a>
+
+          <div className="w-full md:w-2/3 bg-white relative flex flex-col p-0">
+            {isDevMode && (
+               <div className="bg-yellow-100 text-yellow-800 p-2 text-xs text-center font-bold">
+                 ⚠️ Modo Teste Ativo
+               </div>
+            )}
+            
+            {/* Iframe Integrado */}
+            {paymentUrl ? (
+               <iframe 
+                 src={paymentUrl} 
+                 className="w-full h-full border-0 flex-grow" 
+                 title="Pagamento AbacatePay"
+               />
+             ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                    <Loader2 className="w-10 h-10 animate-spin mb-2" />
+                    <span className="ml-2">Carregando tela de pagamento...</span>
+                </div>
              )}
-            <button onClick={copyToClipboard} className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold transition border border-gray-200"><Copy className="w-4 h-4" /> Copiar Código/Link</button>
-            <button onClick={onConfirm} className="w-full bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-green-600/20">Já fiz o pagamento!</button>
+             
+             {/* Botão flutuante para abrir externamente */}
+             <div className="absolute bottom-4 right-4 z-10">
+                <a href={paymentUrl} target="_blank" rel="noreferrer" className="bg-white/90 p-2.5 rounded-full shadow-lg hover:bg-white text-gray-700 flex items-center gap-2 px-4 text-xs font-bold border border-gray-200" title="Abrir em nova aba">
+                  <ExternalLink className="w-4 h-4"/> Abrir no Navegador
+                </a>
+             </div>
+             
+             {/* Botão Mobile */}
+             <div className="md:hidden p-4 border-t border-gray-100 bg-white">
+                <button 
+                    onClick={onConfirm} 
+                    disabled={!isPaid} 
+                    className={`w-full py-3 rounded-xl font-bold shadow-lg transition flex items-center justify-center gap-2
+                      ${!isPaid ? 'bg-gray-300 text-gray-500' : 'bg-green-600 text-white'}`}
+                >
+                   {!isPaid ? "Aguardando pagamento..." : "Confirmar Pedido"}
+                </button>
+             </div>
           </div>
-          <button onClick={onClose} className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline">Cancelar</button>
         </div>
       </div>
     </div>
@@ -232,6 +326,10 @@ const AcaiModal = ({ product, onClose, onAdd }) => {
           <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition"><X className="w-5 h-5"/></button>
         </div>
         <div className="p-5 max-h-[50vh] overflow-y-auto custom-scrollbar">
+          <div className="flex items-center justify-between mb-4">
+             <p className="text-sm font-medium text-gray-600">Escolha seus adicionais:</p>
+             <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">{selected.length} selecionados</span>
+          </div>
           <div className="grid grid-cols-1 gap-2">
             {ACAI_TOPPINGS.map(t => {
               const isSelected = selected.includes(t.name);
@@ -261,7 +359,9 @@ const AcaiModal = ({ product, onClose, onAdd }) => {
 // --- COMPONENTES PRINCIPAIS ---
 
 const LoyaltyCard = ({ progress }) => {
-  const percentage = Math.min((progress / LOYALTY_GOAL) * 100, 100);
+  const giftsEarned = Math.floor(progress / LOYALTY_GOAL);
+  const percentage = ((progress % LOYALTY_GOAL) / LOYALTY_GOAL) * 100;
+
   return (
     <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl mb-8 relative overflow-hidden">
       <div className="absolute top-0 right-0 opacity-10"><Gift className="w-48 h-48 -mr-10 -mt-10" /></div>
@@ -274,6 +374,15 @@ const LoyaltyCard = ({ progress }) => {
           <div className="bg-gradient-to-r from-yellow-300 to-amber-500 h-full transition-all duration-1000" style={{ width: `${percentage}%` }}></div>
         </div>
         <div className="flex justify-between text-xs font-bold text-indigo-100 mb-4"><span>0</span><span>{LOYALTY_GOAL} Pedidos</span></div>
+        {giftsEarned > 0 && (
+          <div className="bg-white text-indigo-900 p-3 rounded-xl flex items-center gap-3 shadow-lg animate-pulse">
+            <Gift className="w-6 h-6 text-purple-600" />
+            <div>
+              <p className="font-bold leading-tight">Você tem {giftsEarned} brinde(s) disponível(is)!</p>
+              <p className="text-xs text-indigo-700">Solicite na observação do próximo pedido.</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -287,11 +396,7 @@ const OrdersHistory = ({ supabase, user }) => {
     if (!supabase || !user) return;
     const fetchHistory = async () => {
       setLoading(true);
-      const { data } = await supabase.from(COLLECTION_ORDERS)
-        .select('*')
-        .eq('customer->>telefone', user.phone)
-        .neq('status', 'user_account')
-        .order('createdAt', { ascending: false });
+      const { data } = await supabase.from(COLLECTION_ORDERS).select('*').eq('customer->>telefone', user.phone).neq('status', 'user_account').order('createdAt', { ascending: false });
       if (data) setHistory(data);
       setLoading(false);
     };
@@ -307,10 +412,7 @@ const OrdersHistory = ({ supabase, user }) => {
           {history.map(order => (
             <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="font-bold text-gray-800">Pedido #{order.id.slice(0,4).toUpperCase()}</span>
-                  <p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
-                </div>
+                <div><span className="font-bold text-gray-800">Pedido #{order.id.slice(0,4).toUpperCase()}</span><p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p></div>
                 <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${order.status === 'entregue' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{order.status}</span>
               </div>
               <p className="text-sm text-gray-600">{order.items?.length} itens • {formatBR(order.total)}</p>
@@ -318,6 +420,109 @@ const OrdersHistory = ({ supabase, user }) => {
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+const ProductCard = ({ product, onAdd, onOpenAcai }) => (
+  <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
+    <div className="h-48 overflow-hidden relative bg-gray-100">
+      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+      <div className="absolute top-3 left-3"><span className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-sm text-[10px] font-extrabold text-amber-800 shadow-sm uppercase tracking-wider border border-white/50">{categories[product.category]}</span></div>
+    </div>
+    <div className="p-5 flex flex-col flex-grow">
+      <h3 className="text-lg font-bold text-gray-800 leading-tight mb-2">{product.name}</h3>
+      <p className="text-sm text-gray-500 line-clamp-2 flex-grow">{product.description}</p>
+      <div className="mt-4 flex justify-between items-center pt-4 border-t border-dashed border-gray-100">
+        <span className="font-extrabold text-amber-600 text-xl">{formatBR(product.price)}</span>
+        <button onClick={() => product.id === ACAI_ID ? onOpenAcai(product) : onAdd(product)} className="w-10 h-10 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-lg hover:bg-amber-700 transition"><Plus className="w-5 h-5" /></button>
+      </div>
+    </div>
+  </div>
+);
+
+// NOVA PÁGINA: GALERIA MISTA
+const GalleryPage = () => {
+  return (
+    <div className="p-4 pb-32 max-w-5xl mx-auto animate-fadeIn">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+        <ImageIcon className="w-6 h-6"/> Nossa Galeria
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {GALLERY_CONTENT.map((item, idx) => (
+          <div key={idx} className="group relative overflow-hidden rounded-xl shadow-md bg-white border border-gray-100">
+            {item.type === 'instagram' ? (
+               <div className="w-full h-80 overflow-hidden">
+                 <iframe 
+                   src={`${item.url}embed`} 
+                   className="w-full h-full border-0" 
+                   scrolling="no" 
+                   allowtransparency="true"
+                 />
+               </div>
+            ) : (
+               <div className="h-64 cursor-pointer">
+                 <img 
+                    src={item.url} 
+                    alt={item.title} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                    <span className="text-white font-bold text-lg">{item.title}</span>
+                  </div>
+               </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const TrackingPage = ({ supabase, lastOrderId, orderStatus, setOrderStatus, onReset }) => {
+  useEffect(() => {
+    if (!supabase || !lastOrderId) return;
+    const channel = supabase.channel('tracking-order').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: COLLECTION_ORDERS, filter: `id=eq.${lastOrderId}` }, (payload) => {
+        if (payload.new && payload.new.status) setOrderStatus(payload.new.status);
+    }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [supabase, lastOrderId]);
+
+  const ui = STATUS_UI[orderStatus] || STATUS_UI.novo;
+  const StatusIcon = ui.icon;
+
+  return (
+    <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
+      <div className={`w-28 h-28 ${ui.bg} rounded-full flex items-center justify-center mb-6 shadow-xl transition-all duration-500 animate-bounce-slow`}>
+        <StatusIcon className={`w-14 h-14 ${ui.color}`} />
+      </div>
+      <h2 className={`text-3xl font-black text-gray-800 mb-2 transition-all`}>{ui.label}</h2>
+      <p className="text-gray-500 mb-8 max-w-sm text-lg leading-relaxed">{ui.message}</p>
+      <div className="bg-white p-8 rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 w-full max-w-sm relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
+          <div className={`h-full ${ui.color.replace('text-', 'bg-')} transition-all duration-1000 ${ui.bar}`}></div>
+        </div>
+        <div className="flex justify-between items-center mb-6 mt-2">
+           <p className="text-xs text-gray-400 uppercase font-bold tracking-widest">Status do Pedido</p>
+           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${ui.bg} ${ui.color}`}>{orderStatus}</span>
+        </div>
+        <div className="flex items-center justify-center gap-3 bg-gray-50 py-4 px-4 rounded-2xl border border-gray-100 mb-6">
+          <Clock className="w-5 h-5 text-gray-400" /> 
+          <span className="text-gray-600 font-medium">Previsão: <strong className="text-gray-800">{ETA_TEXT}</strong></span>
+        </div>
+        <div className="pt-6 border-t border-dashed border-gray-200 text-left">
+           <div className="flex justify-between items-center">
+             <div>
+               <p className="text-xs text-gray-400 mb-1 font-bold uppercase">Nº do Pedido</p>
+               <p className="font-mono text-sm font-bold text-gray-600">{lastOrderId ? lastOrderId.slice(-6).toUpperCase() : '---'}</p>
+             </div>
+             <Package className="w-8 h-8 text-gray-200" />
+           </div>
+        </div>
+      </div>
+      <button onClick={onReset} className="mt-10 text-amber-700 font-bold hover:bg-amber-50 px-8 py-3 rounded-full transition border border-transparent hover:border-amber-100">
+        Fazer outro pedido
+      </button>
     </div>
   );
 };
@@ -341,6 +546,7 @@ export default function App() {
   const [orderStatus, setOrderStatus] = useState('novo');
   const [availableProducts, setAvailableProducts] = useState({});
   const [toasts, setToasts] = useState([]);
+  const [isStoreOpen, setIsStoreOpen] = useState(true);
 
   const showToast = (message, type = 'info') => {
     const id = Date.now();
@@ -380,8 +586,13 @@ export default function App() {
       const { data } = await supabase.from(AVAILABILITY_TABLE).select('*');
       if (data) {
         const map = {};
-        data.forEach(item => { map[item.id] = item.is_active; });
+        let storeStatus = true;
+        data.forEach(item => { 
+            if (item.id === STORE_STATUS_ID) storeStatus = item.is_active;
+            else map[item.id] = item.is_active; 
+        });
         setAvailableProducts(map);
+        setIsStoreOpen(storeStatus);
       }
     } catch (e) { console.log("Erro disponibilidade:", e); }
   };
@@ -395,6 +606,9 @@ export default function App() {
   };
 
   const addToCart = (product, quantity = 1, toppings = []) => {
+    // Verificação de loja fechada
+    if (!isStoreOpen) return showToast("A loja está fechada no momento.", 'error');
+
     const uniqueId = product.isCustom ? product.uniqueId : product.id;
     setCart(prev => {
       const existing = prev.find(item => (item.isCustom ? item.uniqueId === uniqueId : item.id === product.id));
@@ -454,9 +668,10 @@ export default function App() {
   };
 
   const handleInitiatePayment = async () => {
+    // Verificação de loja fechada
+    if (!isStoreOpen) return showToast("A loja está fechada. Não é possível realizar pedidos.", 'error');
     if (!customer.nome || !customer.email || !customer.telefone || !customer.rua || !customer.cpf) return showToast("Preencha todos os dados.", 'error');
     
-    // Atualiza endereço do usuário
     if (user && supabase) {
        const userId = `user_${user.phone.replace(/\D/g, '')}`;
        const updated = { ...user, email: customer.email, cpf: customer.cpf, address: { rua: customer.rua, numero: customer.numero, bairro: customer.bairro } };
@@ -464,35 +679,33 @@ export default function App() {
        setUser(updated);
        localStorage.setItem('doceeser_user', JSON.stringify(updated));
     }
-
     setIsProcessingPayment(true);
-    // Chamada ao Backend Proxy (CORS-Free)
     try {
-      // Usando corsproxy para contornar bloqueio no frontend (SOLUÇÃO TEMPORÁRIA P/ TESTE)
-      // Em produção real use seu próprio backend.
-      const response = await fetch("https://corsproxy.io/?https://api.abacatepay.com/v1/billing/create", {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Authorization": `Bearer ${ABACATE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           frequency: "ONE_TIME", methods: ["PIX"],
-          products: cart.map(item => ({ externalId: String(item.id), name: item.name, quantity: item.quantity, price: Math.round(item.price * 100) })),
+          products: [
+              ...cart.map(item => ({ 
+                  externalId: String(item.id), 
+                  name: item.name, 
+                  quantity: item.quantity, 
+                  price: Math.round(item.price * 100) 
+              })),
+              { externalId: "delivery", name: "Taxa de Entrega", quantity: 1, price: Math.round(DELIVERY_FEE * 100) }
+          ],
           returnUrl: window.location.href, completionUrl: window.location.href,
           customer: { name: customer.nome, cellphone: customer.telefone.replace(/\D/g, ''), email: customer.email, taxId: customer.cpf.replace(/\D/g, '') }
         })
       });
       const data = await response.json();
-      
-      // Flexibilidade para pegar o objeto de cobrança em diferentes estruturas
       const billing = data.data?.billing || data.billing || (data.data?.url ? data.data : null);
-
       if (billing && (billing.pix || billing.url)) {
         setPaymentData(billing);
         setPaymentModalOpen(true);
       } else { throw new Error(JSON.stringify(data)); }
-    } catch (error) {
-      console.error(error);
-      showToast("Erro ao gerar Pix. Verifique os dados.", 'error');
-    }
+    } catch (error) { console.error(error); showToast("Erro ao gerar Pix.", 'error'); }
     setIsProcessingPayment(false);
   };
 
@@ -517,6 +730,13 @@ export default function App() {
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
       <ToastContainer toasts={toasts} removeToast={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
       
+      {/* AVISO DE LOJA FECHADA */}
+      {!isStoreOpen && (
+        <div className="fixed bottom-0 left-0 w-full bg-red-600 text-white text-center py-3 z-[100] font-bold shadow-lg animate-slideUp">
+           🚫 A LOJA ESTÁ FECHADA NO MOMENTO
+        </div>
+      )}
+
       <header className="sticky top-0 bg-white/90 backdrop-blur-lg shadow-sm z-40 px-4 py-3 border-b border-gray-100">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setPage('menu')}>
@@ -534,15 +754,13 @@ export default function App() {
                 {isUserMenuOpen && (
                   <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
                     <button onClick={() => { setPage('history'); setIsUserMenuOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-bold flex items-center gap-2"><History className="w-4 h-4"/> Meus Pedidos</button>
+                    {/* Botão Galeria para Logado */}
+                    <button onClick={() => { setPage('gallery'); setIsUserMenuOpen(false); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-bold flex items-center gap-2"><ImageIcon className="w-4 h-4"/> Galeria</button>
                     <button onClick={logoutUser} className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 text-sm font-bold flex items-center gap-2"><LogOut className="w-4 h-4"/> Sair</button>
                   </div>
                 )}
               </div>
-            ) : (
-              <button onClick={() => setAuthModalOpen(true)} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-700 transition">
-                <User className="w-4 h-4" /> Entrar
-              </button>
-            )}
+            ) : <button onClick={() => setAuthModalOpen(true)} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-700 transition"><User className="w-4 h-4" /> Entrar</button>}
             <button onClick={() => setPage('cart')} className="relative p-3 rounded-xl hover:bg-gray-100">
               <ShoppingCart className="w-5 h-5" />
               {cart.length > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">{cart.reduce((a,b)=>a+b.quantity,0)}</span>}
@@ -554,11 +772,22 @@ export default function App() {
       <main className="max-w-4xl mx-auto min-h-[80vh] animate-fadeIn">
         {page === 'menu' && (
           <div className="pb-32">
-            {user ? <div className="px-4 mt-6"><LoyaltyCard progress={loyaltyProgress} /></div> : (
+            {user ? (
+                <div className="px-4 mt-6">
+                    <LoyaltyCard progress={loyaltyProgress} />
+                    {/* Botão Galeria Logado (Abaixo do Fidelidade) */}
+                    <div className="flex justify-center mb-6">
+                        <button onClick={() => setPage('gallery')} className="bg-white border border-amber-100 text-amber-600 px-6 py-2.5 rounded-full font-bold text-sm shadow-sm hover:bg-amber-50 transition flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4"/> Ver Nossa Galeria
+                        </button>
+                    </div>
+                </div>
+            ) : (
               <div className="relative mx-4 mt-6 mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 text-white p-8">
                 <div className="relative z-10 max-w-lg">
                   <h2 className="text-3xl font-extrabold mb-3">O doce equilíbrio <br/>que o seu dia precisa. 🍰</h2>
                   <button onClick={() => setAuthModalOpen(true)} className="bg-white text-amber-800 px-6 py-2.5 rounded-full font-bold text-sm shadow-lg hover:bg-gray-50">Criar Conta / Entrar</button>
+                  <button onClick={() => setPage('gallery')} className="ml-2 bg-white/20 border border-white text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-lg hover:bg-white/30 backdrop-blur-sm">Ver Galeria</button>
                 </div>
               </div>
             )}
@@ -571,7 +800,7 @@ export default function App() {
             </div>
             <div className="px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {visibleProducts.filter(p => categoryFilter === 'all' || p.category === categoryFilter).map(p => (
-                <div key={p.id} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
+                <div key={p.id} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                   <div className="h-48 overflow-hidden relative bg-gray-100">
                     <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                   </div>
@@ -580,7 +809,14 @@ export default function App() {
                     <p className="text-sm text-gray-500 line-clamp-2 flex-grow">{p.description}</p>
                     <div className="mt-4 flex justify-between items-center pt-4 border-t border-dashed border-gray-100">
                       <span className="font-extrabold text-amber-600 text-xl">{formatBR(p.price)}</span>
-                      <button onClick={() => p.id === ACAI_ID ? setAcaiModalProduct(p) : addToCart(p)} className="w-10 h-10 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-lg hover:bg-amber-700 transition"><Plus className="w-5 h-5" /></button>
+                      {/* BOTÃO ADICIONAR (Bloqueado se fechado) */}
+                      <button 
+                        onClick={() => p.id === ACAI_ID ? setAcaiModalProduct(p) : addToCart(p)} 
+                        className={`w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg transition ${isStoreOpen ? 'bg-amber-600 hover:bg-amber-700 active:scale-90' : 'bg-gray-300 cursor-not-allowed'}`}
+                        disabled={!isStoreOpen}
+                      >
+                          <Plus className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -588,6 +824,8 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {page === 'gallery' && <GalleryPage />}
 
         {page === 'cart' && (
           <div className="p-4 pb-32 max-w-2xl mx-auto">
@@ -600,10 +838,7 @@ export default function App() {
                     <div className="flex-grow">
                        <div className="flex justify-between"><h4 className="font-bold">{item.name}</h4><button onClick={() => removeFromCart(item.uniqueId || item.id)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></div>
                        {item.toppings && <p className="text-xs text-gray-500">+ {item.toppings.join(', ')}</p>}
-                       <div className="flex justify-between items-end mt-2">
-                         <p className="font-bold text-amber-700">{formatBR(item.price * item.quantity)}</p>
-                         <div className="flex items-center gap-2 bg-gray-50 rounded p-1"><button onClick={() => item.quantity > 1 ? addToCart(item, -1) : removeFromCart(item.uniqueId || item.id)} className="p-1"><Minus className="w-3 h-3"/></button><span className="text-sm font-bold w-4 text-center">{item.quantity}</span><button onClick={() => addToCart(item, 1)} className="p-1"><Plus className="w-3 h-3"/></button></div>
-                       </div>
+                       <div className="flex justify-between items-end mt-2"><p className="font-bold text-amber-700">{formatBR(item.price * item.quantity)}</p><div className="flex items-center gap-2 bg-gray-50 rounded p-1"><button onClick={() => item.quantity > 1 ? addToCart(item, -1) : removeFromCart(item.uniqueId || item.id)} className="p-1"><Minus className="w-3 h-3"/></button><span className="text-sm font-bold w-4 text-center">{item.quantity}</span><button onClick={() => addToCart(item, 1)} className="p-1"><Plus className="w-3 h-3"/></button></div></div>
                     </div>
                   </div>
                 ))}
@@ -611,49 +846,32 @@ export default function App() {
                   <h3 className="font-bold text-lg border-b pb-2">Entrega</h3>
                   {!user && <p className="text-xs text-blue-600 cursor-pointer" onClick={()=>setAuthModalOpen(true)}>Faça login para preencher automaticamente.</p>}
                   <input placeholder="Seu Nome" className="w-full p-3 border rounded-lg" value={customer.nome} onChange={e => setCustomer({...customer, nome: e.target.value})} />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input placeholder="Telefone" className="p-3 border rounded-lg" value={customer.telefone} onChange={e => setCustomer({...customer, telefone: e.target.value})} />
-                    <input placeholder="CPF" className="p-3 border rounded-lg" value={customer.cpf} onChange={e => setCustomer({...customer, cpf: e.target.value})} />
-                  </div>
+                  <div className="grid grid-cols-2 gap-2"><input placeholder="Telefone" className="p-3 border rounded-lg" value={customer.telefone} onChange={e => setCustomer({...customer, telefone: e.target.value})} /><input placeholder="CPF" className="p-3 border rounded-lg" value={customer.cpf} onChange={e => setCustomer({...customer, cpf: e.target.value})} /></div>
                   <input placeholder="Email" className="w-full p-3 border rounded-lg" value={customer.email} onChange={e => setCustomer({...customer, email: e.target.value})} />
                   <input placeholder="Endereço" className="w-full p-3 border rounded-lg" value={customer.rua} onChange={e => setCustomer({...customer, rua: e.target.value})} />
-                  <div className="grid grid-cols-3 gap-2">
-                    <input placeholder="Número" className="p-3 border rounded-lg" value={customer.numero} onChange={e => setCustomer({...customer, numero: e.target.value})} />
-                    <input placeholder="Bairro" className="col-span-2 p-3 border rounded-lg" value={customer.bairro} onChange={e => setCustomer({...customer, bairro: e.target.value})} />
-                  </div>
+                  <div className="grid grid-cols-3 gap-2"><input placeholder="Número" className="p-3 border rounded-lg" value={customer.numero} onChange={e => setCustomer({...customer, numero: e.target.value})} /><input placeholder="Bairro" className="col-span-2 p-3 border rounded-lg" value={customer.bairro} onChange={e => setCustomer({...customer, bairro: e.target.value})} /></div>
                   <div className="pt-4 border-t flex justify-between items-center"><span className="font-bold">Total</span><span className="text-xl font-black text-amber-700">{formatBR(finalTotal)}</span></div>
-                  <button onClick={handleInitiatePayment} disabled={isProcessingPayment} className="w-full bg-green-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-700">{isProcessingPayment ? <Loader2 className="w-5 h-5 animate-spin"/> : <><Truck className="w-5 h-5"/> Pagar com Pix</>}</button>
+                  {/* BOTÃO PAGAR (Bloqueado se fechado) */}
+                  <button 
+                    onClick={handleInitiatePayment} 
+                    disabled={isProcessingPayment || !isStoreOpen} 
+                    className={`w-full text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition active:scale-98 ${!isStoreOpen ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                  >
+                      {isProcessingPayment ? <Loader2 className="w-5 h-5 animate-spin"/> : !isStoreOpen ? "Loja Fechada" : <><Truck className="w-5 h-5"/> Pagar com Pix</>}
+                  </button>
                 </div>
               </div>
             )}
           </div>
         )}
-
         {page === 'history' && <OrdersHistory supabase={supabase} user={user} />}
-        
-        {page === 'tracking' && (
-          <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
-             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600"><Check className="w-10 h-10"/></div>
-             <h2 className="text-2xl font-bold mb-2">Pedido Recebido!</h2>
-             <p className="text-gray-500 mb-6">Acompanhe o status abaixo.</p>
-             <div className="bg-white p-6 rounded-xl shadow-sm border w-full max-w-sm">
-                <p className="text-xs uppercase font-bold text-gray-400">Status</p>
-                <p className="text-xl font-bold text-amber-600 mb-4 uppercase">{orderStatus}</p>
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-600 bg-gray-50 p-2 rounded"><Clock className="w-4 h-4"/> Previsão: <strong>{ETA_TEXT}</strong></div>
-             </div>
-             <button onClick={() => {setPage('menu'); setCart([]);}} className="mt-8 text-amber-700 font-bold hover:underline">Voltar ao Menu</button>
-          </div>
-        )}
+        {page === 'tracking' && <TrackingPage supabase={supabase} lastOrderId={lastOrderId} orderStatus={orderStatus} setOrderStatus={setOrderStatus} onReset={() => { setPage('menu'); setCart([]); }} />}
       </main>
-
       <AcaiModal product={acaiModalProduct} onClose={() => setAcaiModalProduct(null)} onAdd={addToCart} />
-      <PaymentModal isOpen={paymentModalOpen} onClose={() => setPaymentModalOpen(false)} data={paymentData} onConfirm={handleConfirmOrder} />
+      <PaymentModal isOpen={paymentModalOpen} onClose={() => setPaymentModalOpen(false)} data={paymentData} onConfirm={handleConfirmOrder} cart={cart} />
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} onAuth={handleAuth} onOpenTerms={() => setTermsModalOpen(true)} />
       <TermsModal isOpen={termsModalOpen} onClose={() => setTermsModalOpen(false)} />
-
-      <footer className="bg-white border-t border-gray-100 py-10 text-center text-sm text-gray-400">
-        <p>Feito por <a href="https://instagram.com/diivulgaja" target="_blank" rel="noreferrer" className="font-bold text-amber-700 hover:text-amber-900">Divulga Já</a></p>
-      </footer>
+      <footer className="bg-white border-t border-gray-100 py-10 text-center text-sm text-gray-400"><p>Feito por <a href="https://instagram.com/diivulgaja" target="_blank" rel="noreferrer" className="font-bold text-amber-700 hover:text-amber-900">Divulga Já</a></p></footer>
     </div>
   );
 }
